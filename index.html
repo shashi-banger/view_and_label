@@ -1,0 +1,152 @@
+<script src='https://content.jwplatform.com/libraries/i511f6Xb.js'></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script>jwplayer.key='YOUR_KEY'</script>
+
+<head>
+    <script>
+    var jsonresponse;
+    function loadJSON(callback) {
+        var response;
+        var xobj = new XMLHttpRequest();
+        xobj.overrideMimeType("application/json");
+        xobj.open('GET', 'data.json', true);
+        xobj.onreadystatechange = function() {
+            if (xobj.readyState == 4 && xobj.status == "200") {
+
+                // .open will NOT return a value but simply returns undefined in async mode so use a callback
+                response = callback(xobj.responseText);
+            }
+        }
+        xobj.send(null);
+    }
+
+    /*loadJSON(function(response) {
+        jsonresponse = JSON.parse(response);
+    });*/
+
+    $.ajax({url: "data.json", success : function(response){
+        console.log(response); jsonresponse = response;}
+        ,cache:false});
+
+    </script>
+</head>
+<body onload="populate_form()">
+  <div id="player">Loading the player...</div>
+  <div id="filename"></div><br><br>
+  <div id="cb"></div>
+  <button id="bumpit">Next</button><br><br><br>
+  <button id="save" onclick="saveJson()">Save</button>
+  <script>
+    $.ajaxSetup({ cache: false });
+    var check_indices = [];
+    function saveJson() {
+        console.log("Saving json");
+        //localStorage.setItem("/mydata", JSON.stringify(jsonresponse))
+        var xobj = new XMLHttpRequest();
+        xobj.overrideMimeType("application/json");
+        xobj.open('POST', '', true);
+        xobj.onreadystatechange = function() {
+            if(xobj.readyState == 4 && xobj.status == "200") {
+            }
+        }
+        s = JSON.stringify(jsonresponse);
+        console.log(s)
+        xobj.send(s);
+    }
+
+function insertFilename(f) {
+    var t = document.createTextNode("Filename: " + f);
+    //document.getElementById("filename").appendChild(t);
+    document.getElementById("filename").innerHTML = "Filename: " + f;
+    /*
+    var x = document.createElement("LABEL");
+    var t = document.createTextNode("Filename: " + f);
+    x.setAttribute("for", "player");
+    x.appendChild(t);
+    document.getElementByTagName('body').insertBefore(x,document.getElementById("player"));
+    */
+}
+
+    function create_check_indices() {
+        for(var i = 0; i < jsonresponse.file_info.length; i++)
+        {
+            if (jsonresponse.file_info[i].class == "XXX")
+            {
+                check_indices.push(i);
+            }
+        }
+    }
+
+    function create_input_options() {
+
+        var cbh = document.getElementById('cb');
+        for(var p in jsonresponse.classes) {
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.className = 'messageCheckbox';
+            cb.name = jsonresponse.classes[p];
+            cb.value = jsonresponse.classes[p];
+            cbh.appendChild(cb);
+            cbh.appendChild(document.createTextNode(jsonresponse.classes[p]));
+            cbh.appendChild(document.createElement('br'));
+            console.log(cb.outerHTML);
+        }
+        console.log(cbh.outerHTML);
+    }
+
+    function populate_form() {
+        create_check_indices();
+        create_input_options();
+        // Setup the player
+        filename = jsonresponse.file_info[check_indices[0]].name;
+        var player = jwplayer('player').setup({
+            file: filename,
+            height: 240,
+            width: 360,
+            volume: 10
+        });
+        insertFilename(filename);
+        // Listen to an event
+        player.on('pause', (event) => {
+        alert('Why did my user pause their video instead of watching it?');
+        });
+    }
+
+    function update_results() {
+        var check_list = [];
+        //check_list = document.querySelectorAll('.messageCheckbox:checked').values;
+        $('.messageCheckbox:checked').each(function() {
+            check_list.push($(this).val());
+        });
+        console.log(check_list);
+        if (check_list.length > 1) {
+            alert("Selected more than one");
+            return 1;
+        }
+        jsonresponse.file_info[check_indices[0]].class = check_list[0];
+        $('.messageCheckbox:checked').prop('checked', false);
+        check_indices.shift();
+        return 0;
+    }
+
+    // Call the API
+    const bumpIt = () => {
+        r = update_results();
+        if (r == 0)
+        {
+            filename = jsonresponse.file_info[check_indices[0]].name;
+            player = jwplayer('player').setup({
+                file: filename,
+            height: 240,
+            width: 360,
+            volume: 10
+            });
+            insertFilename(filename);
+        }
+      // alert("Bumpit");
+      // const vol = player.getVolume();
+      //player.setVolume(vol + 10);
+    }
+    document.querySelector('#bumpit').onclick = () => { bumpIt(); }
+  </script>
+</body>
